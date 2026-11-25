@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -8,36 +8,36 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import * as Haptics from 'expo-haptics';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { Colors } from '../../src/theme/colors';
-import { ApiService } from '../../src/services/api';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import * as Haptics from "expo-haptics";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { Colors } from "../../src/theme/colors";
+import { ApiService } from "../../src/services/api";
 
 export default function PressHoldScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const name = (params.name as string) || 'Sofia Martínez';
-  const phone = (params.phone as string) || '+1 555 018 7722';
-  const amount = (params.amount as string) || '45.00';
-  const note = (params.note as string) || '';
-  const greetingCard = (params.greetingCard as string) || 'Send Money';
-  const pin = (params.pin as string) || '12345';
+  const name = (params.name as string) || "Sofia Martínez";
+  const phone = (params.phone as string) || "+1 555 018 7722";
+  const amount = (params.amount as string) || "45.00";
+  const note = (params.note as string) || "";
+  const greetingCard = (params.greetingCard as string) || "Send Money";
+  const pin = (params.pin as string) || "12345";
 
   const [isHolding, setIsHolding] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [successData, setSuccessData] = useState<any | null>(null);
-  const [shareStatus, setShareStatus] = useState('');
+  const [shareStatus, setShareStatus] = useState("");
 
   const holdAnim = useRef(new Animated.Value(0)).current;
 
   const triggerHaptic = (style: Haptics.ImpactFeedbackStyle) => {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== "web") {
       try {
         Haptics.impactAsync(style);
       } catch (e) {}
@@ -79,14 +79,14 @@ export default function PressHoldScreen() {
       const res = await ApiService.sendTransfer({
         recipientPhoneOrId: phone,
         amount: parseFloat(amount),
-        currency: 'USD',
+        currency: "USD",
         note: note || greetingCard,
         pin,
       });
       setSuccessData(res);
       triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
     } catch (err: any) {
-      alert(err.message || 'Payment execution failed');
+      alert(err.message || "Payment execution failed");
       setIsProcessing(false);
       holdAnim.setValue(0);
     }
@@ -103,12 +103,12 @@ export default function PressHoldScreen() {
     ? Number(successData.newBalance)
     : defaultBalanceAfterTransfer;
   const formatMoney = (value: number) =>
-    `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const handleShareReceipt = async () => {
-    const referenceId = successData?.referenceId || 'TX858IWC2H';
+    const referenceId = successData?.referenceId || "TX858IWC2H";
     const receiptMessage = [
-      'Payora payment receipt',
+      "Payora payment receipt",
       `Amount: ${formatMoney(transferAmount)}`,
       `To: ${name}`,
       `Details: ${phone}`,
@@ -116,24 +116,30 @@ export default function PressHoldScreen() {
       `Transaction ID: ${referenceId}`,
       `New balance: ${formatMoney(balanceAfterTransfer)}`,
       `Date: ${new Date().toLocaleString()}`,
-    ].join('\n');
+    ].join("\n");
     try {
-      if (Platform.OS === 'web') {
+      if (Platform.OS === "web") {
         const browserNavigator =
-          typeof navigator === 'undefined'
+          typeof navigator === "undefined"
             ? undefined
             : (navigator as typeof navigator & {
-                share?: (data: { title: string; text: string }) => Promise<void>;
+                share?: (data: {
+                  title: string;
+                  text: string;
+                }) => Promise<void>;
                 clipboard?: { writeText: (text: string) => Promise<void> };
               });
 
         if (browserNavigator?.share) {
           try {
-            await browserNavigator.share({ title: 'Payora receipt', text: receiptMessage });
-            setShareStatus('Receipt shared successfully.');
+            await browserNavigator.share({
+              title: "Payora receipt",
+              text: receiptMessage,
+            });
+            setShareStatus("Receipt shared successfully.");
             return;
           } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') {
+            if (error instanceof Error && error.name === "AbortError") {
               throw error;
             }
             if (!browserNavigator.clipboard?.writeText) {
@@ -144,48 +150,55 @@ export default function PressHoldScreen() {
 
         if (browserNavigator?.clipboard?.writeText) {
           await browserNavigator.clipboard.writeText(receiptMessage);
-          setShareStatus('Receipt details copied to clipboard.');
+          setShareStatus("Receipt details copied to clipboard.");
           return;
         }
 
-        throw new Error('Sharing and clipboard access are unavailable in this browser.');
+        throw new Error(
+          "Sharing and clipboard access are unavailable in this browser.",
+        );
       }
 
       if (!(await Sharing.isAvailableAsync())) {
-        throw new Error('Expo Sharing is unavailable on this device.');
+        throw new Error("Expo Sharing is unavailable on this device.");
       }
 
       const cacheDirectory = FileSystem.cacheDirectory;
       if (!cacheDirectory) {
-        throw new Error('A temporary directory is unavailable for the receipt.');
+        throw new Error(
+          "A temporary directory is unavailable for the receipt.",
+        );
       }
 
-      const safeReferenceId = String(referenceId).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeReferenceId = String(referenceId).replace(
+        /[^a-zA-Z0-9_-]/g,
+        "_",
+      );
       const receiptUri = `${cacheDirectory}payora-receipt-${safeReferenceId}.txt`;
       await FileSystem.writeAsStringAsync(receiptUri, receiptMessage, {
         encoding: FileSystem.EncodingType.UTF8,
       });
       await Sharing.shareAsync(receiptUri, {
-        dialogTitle: 'Share Payora receipt',
-        mimeType: 'text/plain',
-        UTI: 'public.plain-text',
+        dialogTitle: "Share Payora receipt",
+        mimeType: "text/plain",
+        UTI: "public.plain-text",
       });
-      setShareStatus('Receipt shared successfully.');
+      setShareStatus("Receipt shared successfully.");
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        setShareStatus('Sharing canceled.');
+      if (error instanceof Error && error.name === "AbortError") {
+        setShareStatus("Sharing canceled.");
         return;
       }
-      console.warn('Unable to share transfer receipt:', error);
-      setShareStatus('Unable to share receipt. Please try again.');
+      console.warn("Unable to share transfer receipt:", error);
+      setShareStatus("Unable to share receipt. Please try again.");
     }
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={["top"]} style={styles.container}>
       <StatusBar
-        style={successData ? 'light' : 'dark'}
-        backgroundColor={successData ? Colors.primary : '#FFFFFF'}
+        style={successData ? "light" : "dark"}
+        backgroundColor={successData ? Colors.primary : "#FFFFFF"}
       />
       <View style={styles.screenContent}>
         <View style={styles.header}>
@@ -217,17 +230,21 @@ export default function PressHoldScreen() {
           <View style={styles.summaryRow}>
             <View>
               <Text style={styles.summaryLabel}>Total</Text>
-              <Text style={styles.summaryValue}>{formatMoney(transferAmount)}</Text>
+              <Text style={styles.summaryValue}>
+                {formatMoney(transferAmount)}
+              </Text>
             </View>
             <View style={styles.summaryRight}>
               <Text style={styles.summaryLabel}>New Balance</Text>
-              <Text style={styles.summaryValue}>{formatMoney(balanceAfterTransfer)}</Text>
+              <Text style={styles.summaryValue}>
+                {formatMoney(balanceAfterTransfer)}
+              </Text>
             </View>
           </View>
 
           <View style={styles.referenceRow}>
             <Text style={styles.summaryLabel}>Reference</Text>
-            <Text style={styles.referenceValue}>{note || '—'}</Text>
+            <Text style={styles.referenceValue}>{note || "—"}</Text>
           </View>
 
           <View style={styles.greetingRow}>
@@ -248,7 +265,10 @@ export default function PressHoldScreen() {
             style={styles.holdCircle}
           >
             <Animated.View
-              style={[styles.holdCircleProgress, { transform: [{ scale: progressScale }] }]}
+              style={[
+                styles.holdCircleProgress,
+                { transform: [{ scale: progressScale }] },
+              ]}
             />
             {isProcessing ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
@@ -257,45 +277,72 @@ export default function PressHoldScreen() {
             )}
           </TouchableOpacity>
           <Text style={styles.holdInstruction}>
-            {isHolding ? 'Keep holding...' : 'Tap and hold for Send Money'}
+            {isHolding ? "Keep holding..." : "Tap and hold for Send Money"}
           </Text>
         </View>
       </View>
 
-      <Modal visible={!!successData} animationType="fade" onRequestClose={() => setSuccessData(null)}>
+      <Modal
+        visible={!!successData}
+        animationType="fade"
+        onRequestClose={() => setSuccessData(null)}
+      >
         <SafeAreaView style={styles.successScreen}>
           <View style={styles.successHero}>
             <View style={styles.checkCircle}>
               <Ionicons name="checkmark" size={30} color={Colors.primary} />
             </View>
             <Text style={styles.successTitle}>Money sent</Text>
-            <Text style={styles.successAmount}>{formatMoney(transferAmount)}</Text>
+            <Text style={styles.successAmount}>
+              {formatMoney(transferAmount)}
+            </Text>
           </View>
           <View style={styles.receiptCard}>
             <ReceiptRow label="To" value={name} />
             <ReceiptRow label="Details" value={phone} />
-            <ReceiptRow label="Tx ID" value={successData?.referenceId || 'TX858IWC2H'} />
-            <ReceiptRow label="Time" value={new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} />
+            <ReceiptRow
+              label="Tx ID"
+              value={successData?.referenceId || "TX858IWC2H"}
+            />
+            <ReceiptRow
+              label="Time"
+              value={new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            />
             <ReceiptRow label="Charge" value="Free" />
-            <ReceiptRow label="New balance" value={formatMoney(balanceAfterTransfer)} />
+            <ReceiptRow
+              label="New balance"
+              value={formatMoney(balanceAfterTransfer)}
+            />
           </View>
           <View style={styles.successActions}>
             <View style={styles.successActionButtons}>
-              <TouchableOpacity style={styles.shareButton} onPress={handleShareReceipt}>
-                <Ionicons name="share-outline" size={15} color={Colors.primary} />
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={handleShareReceipt}
+              >
+                <Ionicons
+                  name="share-outline"
+                  size={15}
+                  color={Colors.primary}
+                />
                 <Text style={styles.shareButtonText}>Share receipt</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.doneButton}
                 onPress={() => {
                   setSuccessData(null);
-                  router.replace('/(tabs)');
+                  router.replace("/(tabs)");
                 }}
               >
                 <Text style={styles.doneButtonText}>Back to Home</Text>
               </TouchableOpacity>
             </View>
-            {shareStatus ? <Text style={styles.shareStatus}>{shareStatus}</Text> : null}
+            {shareStatus ? (
+              <Text style={styles.shareStatus}>{shareStatus}</Text>
+            ) : null}
           </View>
         </SafeAreaView>
       </Modal>
@@ -315,76 +362,76 @@ function ReceiptRow({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   screenContent: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'space-between',
+    backgroundColor: "#FFFFFF",
+    justifyContent: "space-between",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.primary,
   },
   recipientName: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#111111',
+    fontWeight: "700",
+    color: "#111111",
     marginBottom: 1,
   },
   recipientPhone: {
     fontSize: 10,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   checkCircle: {
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
   },
   successTitle: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
     marginBottom: 2,
   },
   successAmount: {
     fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
   receiptValue: {
-    maxWidth: '65%',
-    color: '#111827',
+    maxWidth: "65%",
+    color: "#111827",
     fontSize: 10,
-    fontWeight: '600',
-    textAlign: 'right',
+    fontWeight: "600",
+    textAlign: "right",
   },
   successScreen: {
     flex: 1,
-    backgroundColor: '#F8F5F7',
+    backgroundColor: "#F8F5F7",
   },
   successHero: {
     minHeight: 205,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Colors.primary,
     paddingTop: 16,
     borderBottomLeftRadius: 24,
@@ -393,40 +440,40 @@ const styles = StyleSheet.create({
   receiptCard: {
     marginHorizontal: 16,
     marginTop: -14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
   receiptRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     minHeight: 34,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#F3F4F6",
   },
   receiptLabel: {
-    color: '#6B7280',
+    color: "#6B7280",
     fontSize: 10,
   },
   successActions: {
     paddingHorizontal: 16,
     paddingBottom: 16,
-    marginTop: 'auto',
+    marginTop: "auto",
   },
   successActionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   shareStatus: {
-    color: '#4B5563',
+    color: "#4B5563",
     fontSize: 11,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   shareButton: {
@@ -435,16 +482,16 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     borderWidth: 1,
     borderColor: Colors.primary,
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 6,
   },
   shareButtonText: {
     color: Colors.primary,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 4,
   },
   doneButton: {
@@ -452,142 +499,142 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 9,
     backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: 6,
   },
   doneButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   headerSide: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   transferDetails: {
     paddingHorizontal: 16,
   },
   recipientRow: {
     minHeight: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: '#ECEEF2',
+    borderBottomColor: "#ECEEF2",
   },
   recipientAvatar: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#8FC49A',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#8FC49A",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 7,
   },
   avatarText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   recipientMeta: {
     flex: 1,
   },
   favoriteTag: {
     color: Colors.primary,
-    backgroundColor: '#FCE7EB',
+    backgroundColor: "#FCE7EB",
     borderRadius: 7,
     paddingHorizontal: 6,
     paddingVertical: 2,
     fontSize: 8,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ECEEF2',
+    borderBottomColor: "#ECEEF2",
   },
   summaryRight: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   summaryLabel: {
     fontSize: 9,
-    color: '#6B7280',
+    color: "#6B7280",
     marginBottom: 3,
   },
   summaryValue: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: "700",
+    color: "#111827",
   },
   referenceRow: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#ECEEF2',
+    borderBottomColor: "#ECEEF2",
   },
   referenceValue: {
     fontSize: 10,
-    color: '#111827',
+    color: "#111827",
     marginTop: 2,
   },
   greetingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 8,
   },
   greetingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 6,
-    backgroundColor: '#FCE7EB',
+    backgroundColor: "#FCE7EB",
   },
   greetingText: {
-    color: '#111827',
+    color: "#111827",
     fontSize: 9,
     marginLeft: 5,
   },
   holdPanel: {
-    height: 220,
-    marginTop: 'auto',
+    height: 110,
+    marginTop: "auto",
     backgroundColor: Colors.primary,
-    borderTopLeftRadius: 180,
-    borderTopRightRadius: 180,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 24,
+    borderTopLeftRadius: 160,
+    borderTopRightRadius: 160,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 10,
   },
   holdCircle: {
     width: 62,
     height: 62,
     borderRadius: 31,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.65)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    borderColor: "rgba(255,255,255,0.65)",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   holdCircleProgress: {
-    position: 'absolute',
+    position: "absolute",
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.28)',
+    backgroundColor: "rgba(255,255,255,0.28)",
   },
   payoraMark: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 25,
-    fontWeight: '800',
+    fontWeight: "800",
     zIndex: 1,
   },
   holdInstruction: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 10,
     marginTop: 12,
   },
