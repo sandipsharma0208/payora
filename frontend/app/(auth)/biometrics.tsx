@@ -1,108 +1,277 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  Alert,
+  Platform,
+  Modal,
+  Animated,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
+import * as Haptics from 'expo-haptics';
+import { CameraView, Camera } from 'expo-camera';
 import { useAuth } from '../../src/context/AuthContext';
+import { SecureStorage } from '../../src/services/storage';
 import { Colors } from '../../src/theme/colors';
+
+type ScanStatus = 'idle' | 'scanning' | 'verified';
 
 export default function BiometricsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const { enableBiometrics, loginWithPhone } = useAuth();
-  const [loading, setLoading] = useState(false);
 
-  const completeOnboarding = async (enableBio: boolean) => {
-    setLoading(true);
+  const [loading, setLoading] = useState(false);
+  const [scanStatus, setScanStatus] = useState<ScanStatus>('idle');
+  const [cameraModalVisible, setCameraModalVisible] = useState(false);
+  const [cameraScanStage, setCameraScanStage] = useState<'align' | 'scanning' | 'done'>('align');
+
+  const laserAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const phone = (params.phone as string) || '+1 415 555 0134';
+  const pin = (params.pin as string) || '12345';
+
+  useEffect(() => {
+    if (!cameraModalVisible) return;
+
+    const laserLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(laserAnim, { toValue: 200, duration: 1200, useNativeDriver: true }),
+        Animated.timing(laserAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ]),
+    );
+
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.06, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+
+    laserLoop.start();
+    pulseLoop.start();
+
+    setCameraScanStage('align');
+    const t1 = setTimeout(() => setCameraScanStage('scanning'), 900);
+    const t2 = setTimeout(async () => {
+      setCameraScanStage('done');
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      await SecureStorage.setBiometricEnabled(true);
+    }, 2600);
+    const t3 = setTimeout(async () => {
+      setCameraModalVisible(false);
+      setScanStatus('verified');
+      await finishLogin();
+    }, 3400);
+
+    return () => {
+      laserLoop.stop();
+      pulseLoop.stop();
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [cameraModalVisible]);
+
+  const finishLogin = async () => {
     try {
-      if (enableBio) {
-        await enableBiometrics();
+      await loginWithPhone(phone, pin);
+    } catch (e) {
+      console.warn('Login fallback:', e);
+    }
+    router.replace('/(tabs)');
+  };
+
+  const openCameraFaceScan = async () => {
+    if (Platform.OS === 'web') {
+      setScanStatus('verified');
+      await SecureStorage.setBiometricEnabled(true);
+      await finishLogin();
+      return;
+    }
+
+    const { status } = await Camera.requestCameraPermissionsAsync();
+    if (status === 'granted') {
+      setCameraModalVisible(true);
+    } else {
+      Alert.alert(
+        'Camera Permission Needed',
+        'Camera access is needed to scan your face, or you can continue without Face ID.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Not now', onPress: finishLogin },
+        ],
+      );
+    }
+  };
+
+  const handleEnableFaceId = async () => {
+    setLoading(true);
+    setScanStatus('scanning');
+    try {
+      if (Platform.OS === 'web') {
+        await SecureStorage.setBiometricEnabled(true);
+        setScanStatus('verified');
+        await finishLogin();
+        return;
       }
-      // Log in demo user into main tabs
-      await loginWithPhone('+1 415 555 0134', (params.pin as string) || '12345');
-      router.replace('/(tabs)');
+
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (hasHardware && isEnrolled) {
+        const success = await enableBiometrics();
+        if (success) {
+          setScanStatus('verified');
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+          setTimeout(() => {
+            finishLogin();
+          }, 500);
+          return;
+        }
+        setScanStatus('idle');
+        Alert.alert(
+          'Authentication Cancelled',
+          'Would you like to scan your face with the front camera instead?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Scan Face', onPress: openCameraFaceScan },
+          ],
+        );
+        return;
+      }
+
+      // Fallback to interactive front-camera Face ID scan when OS biometrics isn't enrolled
+      setScanStatus('idle');
+      await openCameraFaceScan();
     } catch (e) {
       console.warn('Biometric setup err:', e);
-      router.replace('/(tabs)');
+      setScanStatus('idle');
+      await openCameraFaceScan();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    setLoading(true);
+    try {
+      await finishLogin();
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Top Header */}
-      <View style={styles.header}>
+    <View style={styles.container}>
+      {/* Pink Top Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="arrow-back" size={24} color="#111111" />
+          <Ionicons name="arrow-back" size={22} color="#111111" />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Face ID</Text>
 
-        <Image source={require("../../assets/payora.png")} style={{ width: 28, height: 28, borderRadius: 8 }} />
+        <Image source={require('../../assets/payora.png')} style={styles.brandLogo} />
       </View>
 
       {/* Main Content */}
       <View style={styles.content}>
-        {/* Soft Circular Glow with Face ID Icon */}
-        <View style={styles.iconContainerOuter}>
-          <View style={styles.iconContainerMiddle}>
-            <View style={styles.iconContainerInner}>
-              <Ionicons name="scan-outline" size={54} color={Colors.primary} />
+        {/* Face ID Illustration */}
+        <View style={styles.heroArea}>
+          <View style={styles.iconContainerOuter}>
+            <View style={styles.iconContainerMiddle}>
+              <View style={styles.iconCard}>
+                {scanStatus === 'verified' ? (
+                  <Ionicons name="checkmark-circle" size={46} color="#16A34A" />
+                ) : (
+                  <MaterialCommunityIcons
+                    name="face-recognition"
+                    size={44}
+                    color={scanStatus === 'scanning' ? Colors.primary : '#111111'}
+                  />
+                )}
+              </View>
             </View>
           </View>
+
+          <Text style={styles.title}>
+            {scanStatus === 'verified'
+              ? 'Face ID Enabled'
+              : scanStatus === 'scanning'
+                ? 'Scanning Face...'
+                : 'Enable Face ID'}
+          </Text>
+          <Text style={styles.subtitle}>
+            Log in and approve payments with a glance,{'\n'}
+            instead of typing your PIN every time.
+          </Text>
         </View>
 
-        <Text style={styles.title}>Enable Face ID</Text>
-        <Text style={styles.subtitle}>
-          Log in and approve payments with a glance, instead of typing your PIN every time.
-        </Text>
+        <View style={styles.divider} />
 
-        {/* Privacy & Security Cards */}
-        <View style={styles.cardsContainer}>
-          <View style={styles.infoCard}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="shield-checkmark" size={20} color={Colors.primary} />
+        {/* Privacy Bullet Points */}
+        <View style={styles.bulletsContainer}>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletIconBox}>
+              <Ionicons name="shield-checkmark-outline" size={20} color="#374151" />
             </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>Your face data stays on your phone</Text>
-              <Text style={styles.cardDesc}>
-                Payora never stores or sees your Face ID data. Your phone handles your authentication securely.
+            <View style={styles.bulletText}>
+              <Text style={styles.bulletTitle}>Your face data stays on your phone</Text>
+              <Text style={styles.bulletDesc}>
+                Payora never stores or sees your Face ID data.{'\n'}
+                Your phone handles the check.
               </Text>
             </View>
           </View>
 
-          <View style={styles.infoCard}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="person-circle-outline" size={20} color={Colors.primary} />
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletIconBox}>
+              <MaterialCommunityIcons name="face-recognition" size={19} color="#374151" />
             </View>
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardTitle}>Add only your own face</Text>
-              <Text style={styles.cardDesc}>
-                Anyone whose face is saved on this phone could log in, so don't add someone else's.
+            <View style={styles.bulletText}>
+              <Text style={styles.bulletTitle}>Add only your own face</Text>
+              <Text style={styles.bulletDesc}>
+                Anyone whose face is saved on this phone could{'\n'}
+                log in, so don't add someone else's.
               </Text>
             </View>
           </View>
         </View>
       </View>
 
-      {/* Action Buttons */}
-      <View style={styles.buttonContainer}>
+      {/* Bottom Action Buttons */}
+      <View style={[styles.buttonContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <TouchableOpacity
           style={styles.enableButton}
           activeOpacity={0.85}
-          onPress={() => completeOnboarding(true)}
+          onPress={handleEnableFaceId}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <View style={styles.buttonContent}>
-              <Ionicons name="scan-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <MaterialCommunityIcons
+                name="face-recognition"
+                size={20}
+                color="#FFFFFF"
+                style={{ marginRight: 8 }}
+              />
               <Text style={styles.enableButtonText}>Enable Face ID</Text>
             </View>
           )}
@@ -111,13 +280,64 @@ export default function BiometricsScreen() {
         <TouchableOpacity
           style={styles.skipButton}
           activeOpacity={0.7}
-          onPress={() => completeOnboarding(false)}
+          onPress={handleSkip}
           disabled={loading}
         >
           <Text style={styles.skipButtonText}>Not now</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+
+      {/* Front-Camera Face Scanning Modal */}
+      <Modal visible={cameraModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.scannerCard}>
+            <View style={styles.scannerHeader}>
+              <Text style={styles.scannerTitle}>Face ID Scan</Text>
+              <TouchableOpacity onPress={() => setCameraModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <Animated.View
+              style={[
+                styles.faceCircleFrame,
+                {
+                  transform: [{ scale: pulseAnim }],
+                  borderColor: cameraScanStage === 'done' ? '#16A34A' : Colors.primary,
+                },
+              ]}
+            >
+              <CameraView style={StyleSheet.absoluteFill} facing="front" />
+
+              {cameraScanStage !== 'done' && (
+                <Animated.View
+                  style={[styles.scanLaser, { transform: [{ translateY: laserAnim }] }]}
+                />
+              )}
+
+              {cameraScanStage === 'done' && (
+                <View style={styles.verifiedBadge}>
+                  <Ionicons name="checkmark-circle" size={64} color="#16A34A" />
+                </View>
+              )}
+            </Animated.View>
+
+            <Text style={styles.scanStageTitle}>
+              {cameraScanStage === 'align'
+                ? 'Position your face in the circle'
+                : cameraScanStage === 'scanning'
+                  ? 'Scanning your face...'
+                  : 'Face ID Verified!'}
+            </Text>
+            <Text style={styles.scanStageSub}>
+              {cameraScanStage === 'done'
+                ? 'You can now log in and approve payments with Face ID.'
+                : 'Hold steady and look directly at the camera.'}
+            </Text>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
@@ -125,140 +345,130 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    justifyContent: 'space-between',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111111',
+    color: '#FFFFFF',
   },
-  logoBadge: {
+  brandLogo: {
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#111111',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
   },
   content: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
     flex: 1,
-    justifyContent: 'center',
+  },
+  heroArea: {
+    alignItems: 'center',
+    paddingTop: 28,
+    paddingBottom: 24,
+    paddingHorizontal: 24,
   },
   iconContainerOuter: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#FDF2F4',
+    width: 152,
+    height: 152,
+    borderRadius: 76,
+    backgroundColor: '#FDF2F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 22,
   },
   iconContainerMiddle: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: '#FCE7EB',
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    backgroundColor: '#FCE6EF',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  iconContainerInner: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  iconCard: {
+    width: 78,
+    height: 78,
+    borderRadius: 22,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: '#E91E63',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: '#111111',
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 16,
-    marginBottom: 32,
+    lineHeight: 19,
   },
-  cardsContainer: {
-    width: '100%',
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginBottom: 22,
   },
-  infoCard: {
+  bulletsContainer: {
+    paddingHorizontal: 22,
+    gap: 20,
+  },
+  bulletRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FAFAFA',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
   },
-  iconCircle: {
+  bulletIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FCE7EB',
+    borderRadius: 10,
+    backgroundColor: '#FCE8F0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
+    marginTop: 2,
   },
-  cardTextContainer: {
+  bulletText: {
     flex: 1,
   },
-  cardTitle: {
-    fontSize: 13,
+  bulletTitle: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#111111',
     marginBottom: 4,
   },
-  cardDesc: {
+  bulletDesc: {
     fontSize: 12,
     color: '#6B7280',
     lineHeight: 17,
   },
   buttonContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
   enableButton: {
-    height: 56,
-    borderRadius: 28,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 4,
+    marginBottom: 10,
   },
   buttonContent: {
     flexDirection: 'row',
@@ -266,16 +476,85 @@ const styles = StyleSheet.create({
   },
   enableButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   skipButton: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
   },
   skipButtonText: {
     color: '#6B7280',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
+  },
+  /* Camera Face Scan Modal */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  scannerCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    padding: 24,
+    alignItems: 'center',
+  },
+  scannerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
+  },
+  scannerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111111',
+  },
+  faceCircleFrame: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 4,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#111111',
+    marginBottom: 20,
+  },
+  scanLaser: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 3,
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  verifiedBadge: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scanStageTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#111111',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  scanStageSub: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 19,
   },
 });

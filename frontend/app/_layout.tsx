@@ -56,7 +56,7 @@ function RootNavigation() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <StatusBar style="light" backgroundColor={Colors.primary} translucent={false} />
+      <StatusBar style="light" backgroundColor={Colors.primary} translucent={false} animated />
       <View style={styles.container}>
         <RootNavigation />
       </View>

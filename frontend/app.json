@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/payora.png",
       "resizeMode": "contain",
-      "backgroundColor": "#E91E63"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
