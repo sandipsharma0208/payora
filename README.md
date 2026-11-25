@@ -82,6 +82,29 @@ banking/
 
 ---
 
+## 📸 App Screens
+
+<table>
+  <tr>
+    <td align="center"><img src="./screenshots/welcome-screen.jpeg" alt="Welcome screen" width="280"><br><b>Welcome</b></td>
+    <td align="center"><img src="./screenshots/home-dashboard-screen.jpeg" alt="Home dashboard" width="280"><br><b>Home Dashboard</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="./screenshots/face-id-screen.jpeg" alt="Face ID setup" width="280"><br><b>Face ID Setup</b></td>
+    <td align="center"><img src="./screenshots/qr-code-screen.jpeg" alt="QR code screen" width="280"><br><b>Payora QR</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="./screenshots/send-money-contact-screen.jpeg" alt="Send money contacts" width="280"><br><b>Send Money</b></td>
+    <td align="center"><img src="./screenshots/send-abroad-screen.jpeg" alt="Send abroad" width="280"><br><b>Send Abroad</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="./screenshots/inbox-screen.jpeg" alt="Inbox and transactions" width="280"><br><b>Inbox &amp; Transactions</b></td>
+    <td align="center"><img src="./screenshots/ai-support-screen.jpeg" alt="AI support chat" width="280"><br><b>AI Support</b></td>
+  </tr>
+</table>
+
+---
+
 ## 🚀 Quick Start Guide
 
 ### 1. Backend Setup
