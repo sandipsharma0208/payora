@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Payora",
+    "slug": "payora",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/payora.png",
+    "userInterfaceStyle": "light",
+    "scheme": "payora",
+    "splash": {
+      "image": "./assets/payora.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E91E63"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.payora.wallet",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Payora uses Face ID to securely authenticate you and approve fast payments."
+      }
+    },
+    "android": {
+      "package": "com.payora.wallet",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/payora.png",
+        "backgroundColor": "#E91E63"
+      },
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/payora.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Payora to use Face ID for fast and secure authentication."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "742cd2ba-34b5-42d4-9fa2-8cc3e1e6d4d3"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "payora-monorepo",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
+}

@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum Currency {
+  USD
+  EUR
+  GBP
+  JPY
+  BDT
+}
+
+enum TransactionType {
+  TRANSFER
+  EXCHANGE
+  ADD_MONEY
+  WITHDRAW
+  MOBILE_TOPUP
+  PAY_BILL
+  FEE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum KycStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model User {
+  id           String      @id @default(uuid())
+  firebaseUid  String?     @unique
+  phoneNumber  String      @unique
+  email        String?     @unique
+  fullName     String
+  pinHash      String?
+  avatarUrl    String?
+  kycStatus    KycStatus   @default(UNVERIFIED)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  accounts     Account[]
+  sentTransactions Transaction[] @relation("SenderTransactions")
+
+  @@map("users")
+}
+
+model Account {
+  id           String       @id @default(uuid())
+  userId       String?      // Optional for system/platform accounts (e.g., fee treasury)
+  name         String       // e.g. "USD Primary Wallet", "Fee Treasury"
+  currency     Currency     @default(USD)
+  type         AccountType  @default(ASSET)
+  isPrimary    Boolean      @default(false)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries      Entry[]
+
+  @@unique([userId, currency])
+  @@map("accounts")
+}
+
+model Transaction {
+  id           String            @id @default(uuid())
+  referenceId  String            @unique @default(uuid())
+  senderId     String?
+  sender       User?             @relation("SenderTransactions", fields: [senderId], references: [id])
+  type         TransactionType
+  status       TransactionStatus @default(COMPLETED)
+  description  String
+  note         String?
+  metadata     Json?
+  createdAt    DateTime          @default(now())
+
+  entries      Entry[]
+
+  @@map("transactions")
+}
+
+model Entry {
+  id            String       @id @default(uuid())
+  transactionId String
+  accountId     String
+  // In our double-entry ledger:
+  // Credits are positive, Debits are negative (or conventional signed amounts).
+  // The fundamental invariant: SUM(amount) for all entries within a transaction MUST equal 0.
+  amount        Decimal      @db.Decimal(18, 4)
+  currency      Currency
+
+  createdAt     DateTime     @default(now())
+
+  transaction   Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  account       Account      @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([accountId])
+  @@index([transactionId])
+  @@map("entries")
+}
