@@ -207,7 +207,7 @@ export default function HomeScreen() {
                 onPress={() => setBalanceVisible(!balanceVisible)}
               >
                 <View style={styles.balanceIconCircle}>
-                  <Text style={styles.balanceCoinSymbol}>৳</Text>
+                  <Text style={styles.balanceCoinSymbol}>$</Text>
                 </View>
                 <Text style={styles.balancePillText}>
                   {balanceVisible ? primaryBalance : 'Tap for Balance'}
@@ -238,34 +238,56 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Landscape artwork: hills + house + tree */}
+        {/* Landscape artwork: sun + cloud + rolling mountains + cottages + road + tree */}
         <View style={styles.landscape}>
-          {/* Soft white sun */}
+          {/* Soft pink rising sun */}
           <View style={styles.sun} />
-          {/* Small cloud */}
-          <View style={styles.cloud} />
-          {/* Back hill */}
-          <View style={styles.hillBack} />
-          {/* Left cottage */}
+
+          {/* Fluffy cloud near search icon */}
+          <View style={styles.cloudWrap}>
+            <View style={[styles.cloudPuff, { width: 14, height: 14, left: 4, top: 3 }]} />
+            <View style={[styles.cloudPuff, { width: 18, height: 18, left: 11, top: 0 }]} />
+            <View style={[styles.cloudPuff, { width: 13, height: 13, left: 22, top: 4 }]} />
+            <View style={styles.cloudBase} />
+          </View>
+
+          {/* Back rolling pink mountains */}
+          <View style={styles.mountainBackLeft} />
+          <View style={styles.mountainBackRight} />
+
+          {/* Left dark-magenta foreground hill */}
+          <View style={styles.hillLeft} />
+
+          {/* Right medium-magenta foreground hill */}
+          <View style={styles.hillRight} />
+
+          {/* Light-pink curved path sweeping from right */}
+          <View style={styles.roadCurve} />
+
+          {/* Left cottage (pale pink wall + maroon pitched roof) */}
           <View style={styles.houseLeft}>
-            <View style={styles.roofLeft} />
+            <View style={styles.roofLeft}>
+              <View style={styles.roofLeftTop} />
+            </View>
             <View style={styles.bodyLeft}>
-              <View style={styles.window} />
-              <View style={styles.door} />
+              <View style={styles.doorLeft} />
+              <View style={styles.windowLeft} />
             </View>
           </View>
-          {/* Front hill */}
-          <View style={styles.hillFront} />
-          {/* Right cottage */}
+
+          {/* Right cottage (pale pink wall + maroon pitched roof) */}
           <View style={styles.houseRight}>
             <View style={styles.roofRight} />
             <View style={styles.bodyRight}>
-              <View style={styles.window} />
+              <View style={styles.doorRight} />
+              <View style={styles.windowRight} />
             </View>
           </View>
-          {/* Tree */}
+
+          {/* Tree beside right cottage */}
           <View style={styles.tree}>
-            <View style={styles.treeTop} />
+            <View style={styles.treeCanopyMain} />
+            <View style={styles.treeCanopySide} />
             <View style={styles.treeTrunk} />
           </View>
         </View>
@@ -444,14 +466,14 @@ const styles = StyleSheet.create({
   },
   /* ── Header ── */
   headerGradient: {
-    paddingHorizontal: 16,
-    paddingBottom: 42,
+    paddingBottom: 38,
     overflow: 'hidden',
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 16,
     paddingTop: 8,
     zIndex: 20,
   },
@@ -555,122 +577,196 @@ const styles = StyleSheet.create({
   },
   /* ── Landscape artwork ── */
   landscape: {
-    height: 90,
-    marginTop: 10,
+    height: 100,
+    marginTop: 4,
     position: 'relative',
     overflow: 'hidden',
   },
   sun: {
     position: 'absolute',
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: 'rgba(255,255,255,0.13)',
-    top: -18,
-    right: '38%',
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    backgroundColor: 'rgba(255, 190, 215, 0.36)',
+    top: 4,
+    left: '37%',
   },
-  cloud: {
+  cloudWrap: {
     position: 'absolute',
+    top: 2,
+    right: 92,
     width: 40,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    top: 6,
-    right: 60,
+    height: 20,
   },
-  hillBack: {
+  cloudPuff: {
     position: 'absolute',
-    bottom: -18,
-    left: -60,
-    width: '130%',
-    height: 70,
-    borderRadius: 40,
-    backgroundColor: '#B71553',
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 190, 215, 0.3)',
   },
-  hillFront: {
+  cloudBase: {
     position: 'absolute',
-    bottom: -24,
-    right: -60,
-    width: '120%',
-    height: 70,
-    borderRadius: 42,
-    backgroundColor: '#8E0D3B',
+    bottom: 2,
+    left: 2,
+    right: 2,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 190, 215, 0.3)',
+  },
+  mountainBackLeft: {
+    position: 'absolute',
+    bottom: -240,
+    left: -90,
+    width: 340,
+    height: 300,
+    borderRadius: 170,
+    backgroundColor: '#EF4782',
+  },
+  mountainBackRight: {
+    position: 'absolute',
+    bottom: -245,
+    right: -70,
+    width: 360,
+    height: 310,
+    borderRadius: 180,
+    backgroundColor: '#EF4782',
+  },
+  hillLeft: {
+    position: 'absolute',
+    bottom: -270,
+    left: -80,
+    width: 350,
+    height: 320,
+    borderRadius: 175,
+    backgroundColor: '#C40E52',
+    zIndex: 2,
+  },
+  hillRight: {
+    position: 'absolute',
+    bottom: -280,
+    right: -80,
+    width: 360,
+    height: 320,
+    borderRadius: 180,
+    backgroundColor: '#DB1961',
+    zIndex: 1,
+  },
+  roadCurve: {
+    position: 'absolute',
+    bottom: -120,
+    right: -50,
+    width: 260,
+    height: 148,
+    borderRadius: 130,
+    borderTopWidth: 10,
+    borderColor: '#F9B2CB',
+    backgroundColor: 'transparent',
+    zIndex: 3,
   },
   houseLeft: {
     position: 'absolute',
-    bottom: 10,
-    left: 50,
+    bottom: 14,
+    left: 52,
+    alignItems: 'center',
     zIndex: 5,
   },
   roofLeft: {
-    width: 32,
-    height: 11,
-    backgroundColor: '#7A0532',
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
+    width: 44,
+    height: 13,
+    backgroundColor: '#8B0736',
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    transform: [{ scaleX: 1.05 }],
+  },
+  roofLeftTop: {
+    width: '100%',
+    height: 2,
   },
   bodyLeft: {
-    width: 28,
-    height: 16,
-    backgroundColor: '#CE1757',
-    marginLeft: 2,
+    width: 36,
+    height: 20,
+    backgroundColor: '#FADCE6',
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingTop: 2,
-    paddingHorizontal: 2,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingHorizontal: 6,
+    paddingBottom: 2,
   },
-  window: {
-    width: 5,
-    height: 5,
-    backgroundColor: '#FFFFFF',
+  doorLeft: {
+    width: 7,
+    height: 11,
+    backgroundColor: '#D81B60',
+    borderTopLeftRadius: 1,
+    borderTopRightRadius: 1,
+  },
+  windowLeft: {
+    width: 7,
+    height: 6,
+    backgroundColor: '#D81B60',
+    marginBottom: 4,
     borderRadius: 1,
-  },
-  door: {
-    width: 5,
-    height: 8,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 2,
-    borderTopRightRadius: 2,
   },
   houseRight: {
     position: 'absolute',
-    bottom: 14,
-    right: 60,
+    bottom: 24,
+    right: 48,
+    alignItems: 'center',
     zIndex: 5,
   },
   roofRight: {
-    width: 26,
-    height: 9,
-    backgroundColor: '#6B0429',
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
+    width: 32,
+    height: 10,
+    backgroundColor: '#8B0736',
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
   },
   bodyRight: {
-    width: 22,
-    height: 14,
-    backgroundColor: '#CE1757',
-    marginLeft: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 26,
+    height: 15,
+    backgroundColor: '#FADCE6',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingHorizontal: 4,
+    paddingBottom: 1,
+  },
+  doorRight: {
+    width: 5,
+    height: 8,
+    backgroundColor: '#D81B60',
+  },
+  windowRight: {
+    width: 5,
+    height: 5,
+    backgroundColor: '#D81B60',
+    marginBottom: 3,
   },
   tree: {
     position: 'absolute',
-    bottom: 14,
-    right: 36,
+    bottom: 24,
+    right: 22,
     alignItems: 'center',
     zIndex: 6,
   },
-  treeTop: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#5C0526',
+  treeCanopyMain: {
+    width: 19,
+    height: 19,
+    borderRadius: 10,
+    backgroundColor: '#9E0B42',
+  },
+  treeCanopySide: {
+    position: 'absolute',
+    top: 4,
+    left: -5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#B5124F',
   },
   treeTrunk: {
-    width: 4,
-    height: 7,
-    backgroundColor: '#400319',
+    width: 3,
+    height: 9,
+    backgroundColor: '#7A0532',
+    marginTop: -1,
   },
   /* ── White sheet ── */
   sheet: {
