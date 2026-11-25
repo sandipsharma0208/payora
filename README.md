@@ -23,10 +23,12 @@ In Payora, **account balances are never stored as a mutable number**. Instead, a
 $$\text{Account Balance} = \sum_{e \in \text{Entries}} e.\text{amount}$$
 
 ### Ledger Invariant
+
 For every financial transaction $T$ (transfer, exchange, deposit, fee):
 $$\sum_{e \in T.\text{entries}} e.\text{amount} = 0$$
 
 For example, when Alice sends $100 to Bob with a $1.00 platform fee:
+
 - Alice's Asset Account: **-$100.00** (Debit)
 - Bob's Asset Account: **+$99.00** (Credit)
 - Payora Platform Fee Revenue Account: **+$1.00** (Credit)
@@ -88,13 +90,11 @@ banking/
   <tr>
     <td align="center"><img src="./screenshots/welcome-screen.jpeg" alt="Welcome screen" width="280"><br><b>Welcome</b></td>
     <td align="center"><img src="./screenshots/home-dashboard-screen.jpeg" alt="Home dashboard" width="280"><br><b>Home Dashboard</b></td>
-  </tr>
-  <tr>
     <td align="center"><img src="./screenshots/face-id-screen.jpeg" alt="Face ID setup" width="280"><br><b>Face ID Setup</b></td>
-    <td align="center"><img src="./screenshots/qr-code-screen.jpeg" alt="QR code screen" width="280"><br><b>Payora QR</b></td>
   </tr>
   <tr>
-    <td align="center"><img src="./screenshots/send-money-contact-screen.jpeg" alt="Send money contacts" width="280"><br><b>Send Money</b></td>
+    <td align="center"><img src="./screenshots/qr-code-screen.jpeg" alt="QR code screen" width="280"><br><b>Payora QR</b></td>
+     <td align="center"><img src="./screenshots/send-money-contact-screen.jpeg" alt="Send money contacts" width="280"><br><b>Send Money</b></td>
     <td align="center"><img src="./screenshots/send-abroad-screen.jpeg" alt="Send abroad" width="280"><br><b>Send Abroad</b></td>
   </tr>
   <tr>
@@ -108,6 +108,7 @@ banking/
 ## 🚀 Quick Start Guide
 
 ### 1. Backend Setup
+
 ```bash
 cd backend
 npm install
@@ -118,9 +119,11 @@ npm run prisma:seed
 # Start backend in development mode
 npm run start:dev
 ```
+
 API Documentation will be available at `http://localhost:3000/api/docs`.
 
 ### 2. Frontend Setup
+
 ```bash
 cd frontend
 npm install
