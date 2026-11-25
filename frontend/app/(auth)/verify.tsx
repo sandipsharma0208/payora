@@ -10,6 +10,9 @@ export default function VerifyScreen() {
   const params = useLocalSearchParams();
   const displayPhone = (params.phone as string) || '+1 415 555 0134';
 
+  const phone = (params.phone as string) || '+1 415 555 0134';
+  const countryCode = (params.countryCode as string) || 'US';
+
   const [code, setCode] = useState('');
   const [timer, setTimer] = useState(44);
 
@@ -25,14 +28,20 @@ export default function VerifyScreen() {
     setCode(nextCode);
     if (nextCode.length === 6) {
       setTimeout(() => {
-        router.push('/(auth)/pin');
+        router.push({
+          pathname: '/(auth)/about',
+          params: { phone: displayPhone, countryCode },
+        });
       }, 200);
     }
   };
 
   const handleVerify = () => {
     if (code.length === 6) {
-      router.push('/(auth)/pin');
+      router.push({
+        pathname: '/(auth)/about',
+        params: { phone: displayPhone, countryCode },
+      });
     }
   };
 

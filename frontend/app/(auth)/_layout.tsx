@@ -6,6 +6,7 @@ export default function AuthLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="phone" />
       <Stack.Screen name="verify" />
+      <Stack.Screen name="about" />
       <Stack.Screen name="pin" />
       <Stack.Screen name="biometrics" />
     </Stack>

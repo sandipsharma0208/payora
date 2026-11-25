@@ -60,11 +60,18 @@ export default function InboxScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Inbox</Text>
-        <Image source={require("../../assets/payora.png")} style={styles.brandBadge} />
-      </View>
+      <View style={styles.screenContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Inbox</Text>
+          <Image source={require("../../assets/payora.png")} style={styles.brandBadge} />
+        </View>
 
       {/* Tabs: Transactions / Notifications */}
       <View style={styles.tabBar}>
@@ -251,6 +258,7 @@ export default function InboxScreen() {
           </View>
         </View>
       </Modal>
+      </View>
     </SafeAreaView>
   );
 }
@@ -258,27 +266,35 @@ export default function InboxScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.primary,
+  },
+  screenContent: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    minHeight: 50,
+    paddingHorizontal: 14,
+    backgroundColor: Colors.primary,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#111111',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   brandBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#111111',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
   },
   brandBadgeText: {
     color: '#FFFFFF',

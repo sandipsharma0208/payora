@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
 
 export default function PinScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const phone = (params.phone as string) || '+1 415 555 0134';
   const [pin, setPin] = useState('');
 
   const handlePinChange = (value: string) => {
@@ -16,7 +18,7 @@ export default function PinScreen() {
       setTimeout(() => {
         router.push({
           pathname: '/(auth)/biometrics',
-          params: { pin: nextPin },
+          params: { pin: nextPin, phone },
         });
       }, 200);
     }
@@ -26,7 +28,7 @@ export default function PinScreen() {
     if (pin.length === 5) {
       router.push({
         pathname: '/(auth)/biometrics',
-        params: { pin },
+        params: { pin, phone },
       });
     }
   };
@@ -43,7 +45,7 @@ export default function PinScreen() {
           <Ionicons name="arrow-back" size={24} color="#111111" />
         </TouchableOpacity>
 
-        <Text style={styles.stepIndicator}>Step 3 of 4</Text>
+        <Text style={styles.stepIndicator}>Step 4 of 4</Text>
 
         <Image source={require("../../assets/payora.png")} style={{ width: 28, height: 28, borderRadius: 8 }} />
       </View>

@@ -1,15 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  TextInput,
+  Modal,
+  FlatList,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
+import { COUNTRIES, CountryOption } from '../../src/constants/countries';
 
 export default function PhoneScreen() {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState('4155550134'); // Pre-filled default matching screenshot
   const [emailAddress, setEmailAddress] = useState('');
   const [authMode, setAuthMode] = useState<'mobile' | 'email'>('mobile');
+  const [country, setCountry] = useState<CountryOption>(COUNTRIES[0]);
+  const [countryModalVisible, setCountryModalVisible] = useState(false);
 
   const canContinue =
     authMode === 'mobile'
@@ -21,8 +33,9 @@ export default function PhoneScreen() {
       router.push({
         pathname: '/(auth)/verify',
         params: {
-          phone: authMode === 'mobile' ? `+1 ${phoneNumber}` : emailAddress.trim(),
+          phone: authMode === 'mobile' ? `${country.dial} ${phoneNumber}` : emailAddress.trim(),
           method: authMode,
+          countryCode: country.code,
         },
       });
     }
@@ -95,22 +108,39 @@ export default function PhoneScreen() {
 
         {/* Country Selector Box */}
         {authMode === 'mobile' && (
-          <TouchableOpacity style={styles.countryBox} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.countryBox}
+            activeOpacity={0.8}
+            onPress={() => setCountryModalVisible(true)}
+          >
             <View style={styles.countryLeft}>
-              <Text style={styles.flag}>🇺🇸</Text>
+              <View style={styles.countryCodeSquare}>
+                <Text style={styles.countryCodeSquareText}>{country.code}</Text>
+              </View>
               <View>
                 <Text style={styles.countryLabel}>Country of residence</Text>
-                <Text style={styles.countryName}>United States (USD wallet)</Text>
+                <Text style={styles.countryName}>{country.name}</Text>
               </View>
             </View>
-            <Ionicons name="chevron-down" size={18} color="#6B7280" />
+            <View style={styles.countryRight}>
+              <View style={styles.walletPill}>
+                <Text style={styles.walletPillText}>{country.currency} wallet</Text>
+              </View>
+              <Ionicons name="chevron-down" size={18} color="#6B7280" />
+            </View>
           </TouchableOpacity>
         )}
 
         <View style={styles.phoneInputBox}>
           {authMode === 'mobile' && (
             <>
-              <Text style={styles.countryCode}>+1</Text>
+              <TouchableOpacity
+                style={styles.dialPicker}
+                onPress={() => setCountryModalVisible(true)}
+              >
+                <Text style={styles.countryCode}>{country.dial}</Text>
+                <Ionicons name="chevron-down" size={14} color="#6B7280" style={{ marginLeft: 3 }} />
+              </TouchableOpacity>
               <View style={styles.inputDivider} />
             </>
           )}
@@ -162,6 +192,68 @@ export default function PhoneScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Where do you live? Country Picker Modal */}
+      <Modal visible={countryModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Where do you live?</Text>
+              <TouchableOpacity onPress={() => setCountryModalVisible(false)}>
+                <Text style={styles.modalDone}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalSub}>
+              Sets your dialing code and primary currency. You can still hold and spend in 13
+              currencies.
+            </Text>
+
+            <FlatList
+              data={COUNTRIES}
+              keyExtractor={(item) => item.code}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => {
+                const selected = item.code === country.code;
+                return (
+                  <TouchableOpacity
+                    style={[styles.countryRow, selected && styles.countryRowSelected]}
+                    onPress={() => {
+                      setCountry(item);
+                      setCountryModalVisible(false);
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.codeBox,
+                        selected ? styles.codeBoxSelected : styles.codeBoxIdle,
+                      ]}
+                    >
+                      <Text style={[styles.codeBoxText, selected && { color: '#FFFFFF' }]}>
+                        {item.code}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.countryRowName}>{item.name}</Text>
+                      <Text style={styles.countryRowSub}>
+                        {item.dial} · {item.currencyName}
+                      </Text>
+                    </View>
+                    {selected ? (
+                      <View style={styles.selectedPill}>
+                        <Text style={styles.selectedPillText}>Selected</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.currencyPill}>
+                        <Text style={styles.currencyPillText}>{item.currency}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -352,5 +444,145 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginRight: 8,
+  },
+  countryCodeSquare: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#FCE8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  countryCodeSquareText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.primary,
+  },
+  countryRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  walletPill: {
+    backgroundColor: '#E0F2F1',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  walletPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#00796B',
+  },
+  dialPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 28,
+    maxHeight: '80%',
+  },
+  modalHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E7EB',
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111111',
+  },
+  modalDone: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  modalSub: {
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 17,
+    marginBottom: 14,
+  },
+  countryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  countryRowSelected: {
+    backgroundColor: '#FDF2F6',
+  },
+  codeBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  codeBoxSelected: {
+    backgroundColor: Colors.primary,
+  },
+  codeBoxIdle: {
+    backgroundColor: '#F3F4F6',
+  },
+  codeBoxText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#111111',
+  },
+  countryRowName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111111',
+  },
+  countryRowSub: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 1,
+  },
+  selectedPill: {
+    backgroundColor: '#FCE8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  selectedPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  currencyPill: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  currencyPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4B5563',
   },
 });
